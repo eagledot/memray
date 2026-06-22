@@ -77,7 +77,7 @@ class BuildMemray(build_ext_orig):
                 configure_cmd,
                 cwd=tmpdirname,
             )
-            self.announce_and_run(["make", "-j"], cwd=tmpdirname)
+            self.announce_and_run(["make", "-j4"], cwd=tmpdirname)
             self.announce_and_run(["make", "install"], cwd=tmpdirname)
 
     def build_js_files(self):
