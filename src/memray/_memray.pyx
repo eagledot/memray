@@ -716,6 +716,10 @@ cdef class Tracker:
     a fresh `Tracker` instance.
 
     Args:
+        mapping: (a pointer): a Pointer to an int32 array/buffer, allocated at python side.
+            First element is supposed to contain the length of this buffer, and then each following would represent the `(Pid,flag)` pair.
+            C++ (memray) runtime would intepret a `flag` for a Pid to resume or suspend writing records for that process/thread id. Thread/process-ids would refer the Threads Python would be creating
+            Pid being allocated by underlying OS would be same for python and C++ runtime hence allowing us to control resume/suspend from a python API.
         file_name (str or pathlib.Path): The name of the file to write the
             captured allocations into. This is the only argument that can be
             passed positionally. If not provided, the *destination* keyword
@@ -758,6 +762,7 @@ cdef class Tracker:
     cdef object _patched_thread_class
     cdef unique_ptr[RecordWriter] _writer
     cdef object _surviving_objects
+    cdef void * _mapping
 
     cdef unique_ptr[Sink] _make_writer(self, destination) except*:
         # Creating a Sink can raise Python exceptions (if is interrupted by signal
@@ -779,7 +784,7 @@ cdef class Tracker:
         else:
             raise TypeError("destination must be a SocketDestination or FileDestination")
 
-    def __cinit__(self, object file_name=None, *, object destination=None,
+    def __cinit__(self,uintptr_t mapping, object file_name=None, *, object destination=None,
                   bool native_traces=False, unsigned int memory_interval_ms = 10,
                   bool follow_fork=False, bool trace_python_allocators=False,
                   bool track_object_lifetimes=False,
@@ -800,7 +805,7 @@ cdef class Tracker:
         self._memory_interval_ms = memory_interval_ms
         self._follow_fork = follow_fork
         self._trace_python_allocators = trace_python_allocators
-
+        self._mapping = <void*>mapping
         if file_name is not None:
             destination = FileDestination(path=file_name)
 
@@ -864,6 +869,7 @@ cdef class Tracker:
                 self._follow_fork,
                 self._trace_python_allocators,
                 self._track_object_lifetimes,
+                self._mapping
             )
             return self
 

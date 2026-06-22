@@ -243,7 +243,8 @@ class Tracker
             unsigned int memory_interval,
             bool follow_fork,
             bool trace_python_allocators,
-            bool reference_tracking);
+            bool reference_tracking,
+            void * mapping);
     static PyObject* destroyTracker();
     static Tracker* getTracker();
 
@@ -446,6 +447,7 @@ class Tracker
     const bool d_follow_fork;
     const bool d_trace_python_allocators;
     const bool d_reference_tracking;
+    void * d_mapping;
     linker::SymbolPatcher d_patcher;
     std::unique_ptr<BackgroundThread> d_background_thread;
 
@@ -480,7 +482,8 @@ class Tracker
             unsigned int memory_interval,
             bool follow_fork,
             bool trace_python_allocators,
-            bool reference_tracking);
+            bool reference_tracking,
+            void * mapping);
 
     static bool areNativeTracesEnabled();
 };

@@ -815,13 +815,15 @@ Tracker::Tracker(
         unsigned int memory_interval,
         bool follow_fork,
         bool trace_python_allocators,
-        bool reference_tracking)
+        bool reference_tracking,
+        void *mapping)
 : d_writer(std::move(record_writer))
 , d_unwind_native_frames(native_traces)
 , d_memory_interval(memory_interval)
 , d_follow_fork(follow_fork)
 , d_trace_python_allocators(trace_python_allocators)
 , d_reference_tracking(reference_tracking)
+, d_mapping(mapping)
 {
     static std::once_flag once;
     call_once(once, [] {
@@ -1108,7 +1110,8 @@ Tracker::childFork()
             old_tracker->d_memory_interval,
             old_tracker->d_follow_fork,
             old_tracker->d_trace_python_allocators,
-            old_tracker->d_reference_tracking));
+            old_tracker->d_reference_tracking,
+            old_tracker->d_mapping));
 
     StopTheWorldGuard stop_the_world;
     std::unique_lock<std::mutex> lock(*s_mutex);
@@ -1482,7 +1485,8 @@ Tracker::createTracker(
         unsigned int memory_interval,
         bool follow_fork,
         bool trace_python_allocators,
-        bool reference_tracking)
+        bool reference_tracking,
+        void *mapping)
 {
     s_instance_owner.reset(new Tracker(
             std::move(record_writer),
@@ -1490,7 +1494,8 @@ Tracker::createTracker(
             memory_interval,
             follow_fork,
             trace_python_allocators,
-            reference_tracking));
+            reference_tracking,
+            mapping));
 
     StopTheWorldGuard stop_the_world;
     std::unique_lock<std::mutex> lock(*s_mutex);
