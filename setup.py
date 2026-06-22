@@ -37,7 +37,7 @@ ASSETS_LOCATION = (
 
 class BuildMemray(build_ext_orig):
     def run(self):
-        self.build_js_files()
+        # self.build_js_files()
         self.build_libbacktrace()
         super().run()
 
@@ -138,10 +138,11 @@ if os.getenv("CYTHON_TEST_MACROS", None) is not None:
     TEST_BUILD = True
 
 MINIMIZE_INLINING = os.getenv("MEMRAY_MINIMIZE_INLINING", "") != ""
+MINIMIZE_INLINING = False
 
 COMPILER_DIRECTIVES = {
     "language_level": 3,
-    "embedsignature": True,
+    "embedsignature": False,
     "boundscheck": False,
     "wraparound": False,
     "cdivision": True,
@@ -331,20 +332,20 @@ setup(
     package_dir={"": "src"},
     packages=find_packages(where="src", exclude="memray/_memray/"),
     ext_modules=cythonize(
-        [MEMRAY_EXTENSION, MEMRAY_TEST_EXTENSION, MEMRAY_INJECT_EXTENSION],
+        [MEMRAY_EXTENSION],
         include_path=["src/memray"],
         compiler_directives=COMPILER_DIRECTIVES,
     ),
     include_package_data=True,
     exclude_package_data={"memray": ["_memray/*"]},
     install_requires=install_requires,
-    extras_require={
-        "test": test_requires,
-        "docs": docs_requires,
-        "lint": lint_requires,
-        "benchmark": benchmark_requires,
-        "dev": test_requires + lint_requires + docs_requires + benchmark_requires,
-    },
+    # extras_require={
+    #     "test": test_requires,
+    #     "docs": docs_requires,
+    #     "lint": lint_requires,
+    #     "benchmark": benchmark_requires,
+    #     "dev": test_requires + lint_requires + docs_requires + benchmark_requires,
+    # },
     entry_points={
         "console_scripts": [
             f"memray{version_info.major}.{version_info.minor}=memray.__main__:main",
