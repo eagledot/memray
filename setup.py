@@ -138,7 +138,7 @@ if os.getenv("CYTHON_TEST_MACROS", None) is not None:
     TEST_BUILD = True
 
 MINIMIZE_INLINING = os.getenv("MEMRAY_MINIMIZE_INLINING", "") != ""
-MINIMIZE_INLINING = False
+MINIMIZE_INLINING = True
 
 COMPILER_DIRECTIVES = {
     "language_level": 3,
