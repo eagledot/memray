@@ -17,6 +17,7 @@
 #include <mutex>
 #include <type_traits>
 #include <unistd.h>
+#include <sys/syscall.h>
 
 #include "compat.h"
 #include "exceptions.h"
@@ -1159,6 +1160,23 @@ Tracker::trackAllocationImpl(
 {
     registerCachedThreadName();
     PythonStackTracker::get().emitPendingPushesAndPops();
+
+    // We interpret the pointer, we received from python side aka `d_mapping` field as a pair of (process_id, 1/0)
+    // 1 allowing writing of this particular record to underlying .bin file and vice-versa.
+    // First element is interpreted as the Length of the array/buffer.
+    unsigned int expected_process_id = (unsigned int)(thread_id());
+    bool write_record_for_this_allocation = false;
+    int mapping_array_max_size =  ((int *)(this -> d_mapping))[0];      // logical elements, each being 4 byte (processId,1/0,processId,1/0,...) every second value is acting as a flag to resume or suspend tracking for this thread/process id.
+    unsigned int * mapping = ((unsigned int *)(this -> d_mapping)) + 1;// 1 for offset, should increment by 4 in absolute sense!
+    for (int i = 0; i < mapping_array_max_size; i+=2){
+        if (mapping[i] == expected_process_id ){
+              write_record_for_this_allocation  = (mapping[i + 1] == 1);
+              break;
+           }
+    }
+    if (write_record_for_this_allocation == false){
+      return;
+    }
 
     if (d_unwind_native_frames) {
         frame_id_t native_index = 0;
