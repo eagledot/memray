@@ -143,8 +143,12 @@ pthread_key_t RecursionGuard::isActiveKey;
 static inline thread_id_t
 generate_next_tid()
 {
-    static std::atomic<thread_id_t> s_tid_counter = 0;
-    return ++s_tid_counter;
+    // static std::atomic<thread_id_t> s_tid_counter = 0;
+    // return ++s_tid_counter;
+    pid_t tid = syscall(SYS_gettid);  // OS thread id;
+    assert (tid >= 0); // it is assumed as of
+    thread_id_t result = (thread_id_t)(tid);
+    return result;
 }
 
 MEMRAY_FAST_TLS thread_local thread_id_t t_tid = generate_next_tid();
