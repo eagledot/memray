@@ -284,11 +284,20 @@ class FlameGraphReporter:
                     "n_allocations": record.n_allocations,
                 }
 
-            stack = (
-                tuple(record.hybrid_stack_trace())
-                if native_traces
-                else record.stack_trace()
-            )
+            # Since there is no API exposed to create flamegraph, we can make do by providing `allocation_records` and `memory_snapshots`.
+            # Its still not perfect, but we get correct! mapping of allocations to Python code (line no) but not memory-snapshot stats (as they are supposed to work correctly with only DEFAULT API)
+            # Despite that, we will get error, about `No stack trace` for deallocations, i think, `memray flamegraph` command,somewhere map manually stack trace to memory snaphots, without collecting stacks for deallocations..
+            # we ignore that error here using this try/catch block! See `stack_trace` routine, where you would find `NotImplemented` error, if we try to get stack trace for deallocations/unmap/destroy
+            # So this would allow us generate good enough flamegraph for now for most/all of the cases!
+            try:
+              stack = (
+                  tuple(record.hybrid_stack_trace())
+                  if native_traces
+                  else record.stack_trace()
+              )
+            except Exception as e:
+              # print(f"[Info]: Ignoring  error: {e}")
+              pass
 
             if not inverted:
                 # normal flamegraph
