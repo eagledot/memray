@@ -297,7 +297,7 @@ class FlameGraphReporter:
               )
             except Exception as e:
               # print(f"[Info]: Ignoring  error: {e}")
-              pass
+              continue
 
             if not inverted:
                 # normal flamegraph
