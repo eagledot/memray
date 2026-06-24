@@ -179,3 +179,9 @@ src/vendor/libbacktrace/install
 
 # pytest-textual-snapshot
 snapshot_report.html
+
+# ignore Html
+*.html
+
+# ignore .bin
+*.bin
