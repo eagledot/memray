@@ -68,3 +68,56 @@ suspend_tracking()
 ...
 tracker.__exit__()
 ```
+
+# Example:
+We make necessary changes to `flamegraph.py` to add a make-do API to generate `html` given allocations from, as Memray currently doesn't expose an API to generate flamegraph programmatically and instead suggest to follow `subprocess [memray flamegraph  ..]` route. Our Api just works good enough for now to let us generate such flamegraphs from python directly!
+After adding some wrapping code like allocating `buffer` for `mapping` , we should now have enough functionality to showcase a full example as show below. It is same as `test_1.py` file in root of this `fork`.
+```python
+# A simple test to see if our api even works!
+import sys
+import time
+
+# This should point to our fork of memray!
+print("[Info]: Memray being imported must point to modified copy of memray!")
+import memray
+from custom_api import deinit_memray_extended, resume_writing_allocations, suspend_writing_allocations,init_memray_extended
+
+import threading
+
+# Create Tracker instance.(just creates a writer technically)
+tracker = init_memray_extended()
+
+# This actually activates the allocations' tracking.
+tracker.__enter__()
+
+def worker(id:int):
+  resume_writing_allocations()
+  z_temp = bytearray(11_000_000) #allocate 11 Mb.
+  print(len(z_temp))
+  suspend_writing_allocations(True)
+
+resume_writing_allocations()
+# The following block will do some minor allocations in main threads to `bootstrap` the worker threads, and then those thread would allocate `concurrently`
+# So we should get a set of 3 flamegraphs, depicting memory allocations on the disk on finishing of script!
+t1 = threading.Thread(target = worker, args = (1,))
+t2 = threading.Thread(target = worker, args = (2,))
+
+t1.start()
+t2.start()
+t1.join()
+t2.join()
+
+# using True when to generate a cycle of allocations in a particualar thread, like finished processing a request !!
+suspend_writing_allocations(True)
+
+tracker.__exit__(None, None, None)
+del tracker
+
+deinit_memray_extended()
+```
+
+# Todo/Pending Issues:
+* For now maximum RSS usage would not be "correctly" reflected in the generated Flamegraph, as original CODE still assumes `process` level STATS !
+* To add some filtering either `index` based or `timestamp` based to collect stats for each independent `cycle` rather than accumulating, as there is still a single `.bin` file is assumed by original Memray code.
+* Speed up flamegraph generation by modifying `reader` code to just use the data from the Memory rather than round-trips to DISK!!
+* apply hook on `thread-exit` to reset the `Pid` stored in mapping, so as that space could be reused/freed for future use, since that particular Pid may not be returned/attributed for some time by OS (atleast in case of linux)!
